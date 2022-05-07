@@ -4,7 +4,7 @@ require "sinatra/reloader" if development?
 require "sinatra/content_for"
 require "tilt/erubis"
 
-require_relative "session_persistence"
+require_relative "database_persistence"
 
 configure do
   enable :sessions
@@ -53,22 +53,8 @@ def load_list(list_id)
 end
 
 before do
-  @storage = SessionPersistence.new(session)
+  @storage = DatabasePersistence.new(logger)
 end
-
-=begin
-GET  /lists                         => View all lists
-GET  /lists/123                     => View a single list
-GET  /lists/new                     => Form to create a new list
-GET  /lists/123/edit                => Edit existing list
-POST /lists                         => Create new list
-POST /lists/123                     => Edit name of existing list
-POST /lists/123/todos               => Add new todo to list
-POST /lists/123/todos/123           => Update status of todo (completed/not completed)
-POST /lists/123/todos/123/destroy   => Delete todo from list
-POST /lists/123/destroy             => Delete list
-POST /lists/123/complete_all        => Mark all todos as completed
-=end
 
 get "/" do
   redirect "/lists"
