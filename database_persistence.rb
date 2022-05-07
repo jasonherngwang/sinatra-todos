@@ -12,13 +12,18 @@ class DatabasePersistence
   end
 
   def find_list(list_id)
-    sql = "SELECT * FROM lists
-            WHERE id = $1;"
+    sql = <<~SQL
+      SELECT * FROM lists
+       WHERE id = $1;
+    SQL
     result = query(sql, list_id)
-    
+
     return nil if result.ntuples == 0
+
     tuple = result.first
-    {id: tuple["id"], name: tuple["name"], todos: []}
+    todos = find_todos_in_list(list_id.to_i)
+    
+    {id: list_id, name: tuple["name"], todos: todos}
   end
 
   def all_lists
@@ -26,7 +31,9 @@ class DatabasePersistence
     result = query(sql)
 
     result.map do |tuple|
-      {id: tuple["id"], name: tuple["name"], todos: []}
+      list_id = tuple["id"].to_i
+      todos = find_todos_in_list(list_id)
+      {id: list_id, name: tuple["name"], todos: todos}
     end
   end
 
@@ -66,12 +73,20 @@ class DatabasePersistence
     # list[:todos].each { |todo| todo[:completed] = true }
   end
 
-  # private
+  private
 
-  # No longer needed since our database has auto-incrementing ids.
-  # def next_element_id(collection)
-  #   max = collection.map { |collection| collection[:id] }.max || 0
-  #   max + 1
-  # end
+  def find_todos_in_list(list_id)
+    sql = <<~SQL
+      SELECT * FROM todos
+       WHERE list_id = $1;
+    SQL
+    result = query(sql, list_id)
+    return [] if result.ntuples == 0
 
+    result.map do |tuple|
+      { id: tuple["id"].to_i, 
+        name: tuple["name"],
+        completed: tuple["completed"] == "t" }
+    end
+  end
 end
