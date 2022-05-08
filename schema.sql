@@ -1,8 +1,3 @@
-DROP DATABASE IF EXISTS todos;
-
-CREATE DATABASE todos;
-\c todos
-
 CREATE TABLE lists (
     id   serial PRIMARY KEY,
     name text   NOT NULL
