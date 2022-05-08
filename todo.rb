@@ -18,19 +18,11 @@ end
 
 helpers do
   def list_complete?(list)
-    todos_count(list) > 0 && todos_remaining_count(list) == 0
+    list[:todos_count] > 0 && list[:todos_remaining_count] == 0
   end
 
   def list_class(list)
-    "complete" if list_complete?(list)
-  end
-
-  def todos_count(list)
-    list[:todos].size
-  end
-
-  def todos_remaining_count(list)
-    list[:todos].select { |todo| !todo[:completed] }.size
+    "complete" if list_complete?(list) # CSS class
   end
 
   def sort_lists(lists, &block)
@@ -113,6 +105,7 @@ end
 get "/lists/:list_id" do
   @list_id = params[:list_id].to_i
   @list = load_list(@list_id)
+  @todos = @storage.find_todos_in_list(@list_id)
   erb :list, layout: :layout
 end
 
@@ -177,17 +170,16 @@ end
 post "/lists/:list_id/todos/:todo_id/destroy" do
   @list_id = params[:list_id].to_i
   @list = load_list(@list_id)
+
   todo_id = params[:todo_id].to_i
-  todo = @list[:todos].select { |todo| todo[:id] == todo_id }.first
+  todo = @storage.find_todos_in_list(@list_id).select { |todo| todo["id"] == todo_id }.first
 
   @storage.delete_todo_from_list(@list_id, todo_id)
-
-  @list[:todos].delete(todo)
   
   if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     status 204
   else
-    session[:success] = "The todo '#{todo[:name]}' has been deleted."
+    session[:success] = "The todo '#{todo["name"]}' has been deleted."
     redirect "/lists/#{@list_id}"
   end
 end
@@ -198,7 +190,7 @@ post "/lists/:list_id/todos/:todo_id" do
   @list = load_list(@list_id)
 
   todo_id = params[:todo_id].to_i
-  todo = @list[:todos].find { |todo| todo[:id] == todo_id }
+  todo = @storage.find_todos_in_list(@list_id).find { |todo| todo[:id] == todo_id }
   is_completed = params[:completed] == "true"
 
   @storage.update_todo_status(@list_id, todo_id, is_completed)
